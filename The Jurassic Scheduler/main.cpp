@@ -67,14 +67,28 @@ vector<Process> readFile(){
 }
 
 void fifo(vector<Process> p){
-    int time = 0;
-    std::cout << "\nFIFO Schedule:\n";
+    int time = p[0].arrival;
+    //int timeline = p[0].arrival + p[0].burst;
+    double avgtime = 0;
+    double resptime = 0;
+    int thr = 0;
+    cout << "\nFIFO Schedule:\n" << "        0123456789\n";
     for (size_t i = 0; i < p.size(); i++)
     {
+        if(time == 10){
+            thr = i;
+        }
         cout << p[i].name;
-        for (size_t i = 0; i < time; i++)
+        avgtime += time;
+        for (size_t j = 0; j < time; j++)
         {
-            cout << "_";
+            if(j>= p[i].arrival){
+                resptime++;
+                cout << "_";
+            }
+            else{
+                cout << " ";
+            }
         }
         while (p[i].burst>0)
         {
@@ -83,8 +97,10 @@ void fifo(vector<Process> p){
             time++;
         }
         cout << endl;
-        
     }
+    cout << "Average wait time: " << avgtime/p.size() << endl;
+    cout << "Average response time: " << resptime/p.size() << endl;
+    cout << "Throughput over 10 cycles: " << thr << endl;
 }
 
 // void sjf(std::vector<Process> processes) {
