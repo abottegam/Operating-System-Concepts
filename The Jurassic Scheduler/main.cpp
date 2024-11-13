@@ -3,6 +3,7 @@
 #include<vector>
 #include<fstream>
 #include<queue>
+#include<algorithm>
 
 using namespace std;
 
@@ -24,23 +25,21 @@ public:
         cout << name << " " << burst << " " << arrival << endl;
     }
 };
+bool byBurst (Process& a, Process& b) { return a.burst < b.burst; }
+bool byArrival (Process& a, Process& b) { return a.arrival < b.arrival; }
 
-class Compare {//the custom comparator for the priority queue
-    public:
-       bool operator()(Process& lhs, Process& rhs){//overloading the operator method
-           if(lhs.arrival > rhs.arrival){//comparing
-               return true;
-           }
-           return false;
-      }
-};
+void sortByBurst(vector<Process>& processes) {
+    std::sort(processes.begin(), processes.end(), byBurst);
+}
+
+// Static function to sort by arrival time
 
 vector<Process> readFile(){
-    ifstream processes("processes.txt");
-    vector<string> tokens;
+    ifstream input("processes.txt");
     string line;
-    vector<Process> process;
-    while (getline(processes, line, '\n'))
+    vector<string> tokens;
+    vector<Process> processes;
+    while (getline(input, line, '\n'))
     {
         size_t pos = 0;
         std::string token;
@@ -50,23 +49,19 @@ vector<Process> readFile(){
             line.erase(0, pos+1);
         }
         tokens.push_back(line);
-        process.push_back(Process(tokens[0], stoi(tokens[1]), stoi(tokens[2])));
+        processes.push_back(Process(tokens[0], stoi(tokens[1]), stoi(tokens[2])));
         tokens.clear();
     }
-    priority_queue<Process, std::vector<Process>, Compare> pq;
-    for(Process p: process){//pushing passengers to the priority queue
-        pq.push(p);
-    }
-    process.clear();
-    while(!pq.empty()){
-        process.push_back(pq.top());
-        pq.pop();
-    }
-    processes.close();
-    return process;
+    return processes;
 }
 
+
+
 void fifo(vector<Process> p){
+    sort(p.begin(), p.end(), byArrival);   
+    for(Process pr: p){
+        pr.print();
+    }
     int time = p[0].arrival;
     //int timeline = p[0].arrival + p[0].burst;
     double avgtime = 0;
@@ -103,10 +98,14 @@ void fifo(vector<Process> p){
     cout << "Throughput over 10 cycles: " << thr << endl;
 }
 
-// void sjf(std::vector<Process> processes) {
+void sjf(vector<Process> processes) {
+    sort(processes.begin(), processes.end(), byBurst);
+}
 //     int time = 0;
 //     int completed = 0;
 //     int n = processes.size();
+
+
 
 //     std::cout << "\nSJF with Preemption Schedule:\n";
     
