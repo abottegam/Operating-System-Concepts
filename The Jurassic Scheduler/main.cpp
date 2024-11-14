@@ -12,25 +12,28 @@ public:
     string name;
     int burst;
     int arrival;
-    int remaining; // To track remaining burst time
-    std::string timeline; // For graph representation
-    // int remaining; // To track remaining burst time for SJF and RR
-    // int startTime = -1; // To track the first time the process starts
+    int start_time;       // For calculating response time
+    int end_time;         // For calculating waiting time
+    bool started = false; // To check if process has started (for response time calculation)
+    string out;
+
     Process(string n, int b, int a) {
         name = n;
         burst = b;
         arrival = a;
     }
     void print(){
-        cout << name << " " << burst << " " << arrival << endl;
+        cout << name << " " << burst << " " << arrival << " " << out << endl;
     }
 };
+
+bool byBurstPointer(Process* a, Process* b) {
+    return a->burst < b->burst;
+}
+
 bool byBurst (Process& a, Process& b) { return a.burst < b.burst; }
 bool byArrival (Process& a, Process& b) { return a.arrival < b.arrival; }
 
-void sortByBurst(vector<Process>& processes) {
-    std::sort(processes.begin(), processes.end(), byBurst);
-}
 
 // Static function to sort by arrival time
 
@@ -41,7 +44,7 @@ vector<Process> readFile(){
     vector<Process> processes;
     while (getline(input, line, '\n'))
     {
-        size_t pos = 0;
+        int pos = 0;
         std::string token;
         while ((pos = line.find(' ')) != string::npos) {
             token = line.substr(0, pos);
@@ -52,18 +55,14 @@ vector<Process> readFile(){
         processes.push_back(Process(tokens[0], stoi(tokens[1]), stoi(tokens[2])));
         tokens.clear();
     }
+    sort(processes.begin(), processes.end(), byArrival);   
     return processes;
 }
 
 
 
 void fifo(vector<Process> p){
-    sort(p.begin(), p.end(), byArrival);   
-    for(Process pr: p){
-        pr.print();
-    }
     int time = p[0].arrival;
-    //int timeline = p[0].arrival + p[0].burst;
     double avgtime = 0;
     double resptime = 0;
     int thr = 0;
@@ -99,117 +98,74 @@ void fifo(vector<Process> p){
 }
 
 void sjf(vector<Process> processes) {
-    sort(processes.begin(), processes.end(), byBurst);
+    int time = 0;
+    double total_wait_time = 0, total_response_time = 0;
+    int completed = 0, thr = 0;
+    vector<Process*> ready_queue;
+
+    cout << "\nSJF Schedule:\n        01234567890123456789\n";
+
+    sort(processes.begin(), processes.end(), byArrival);
+
+    while (completed < processes.size()) {
+        // Add newly arrived processes to the ready queue
+        for (size_t i = 0; i < processes.size(); ++i) {
+            Process& process = processes[i];
+            if (process.arrival <= time && process.burst > 0 &&
+                find(ready_queue.begin(), ready_queue.end(), &process) == ready_queue.end()) {
+                ready_queue.push_back(&process);
+            }
+        }
+
+        sort(ready_queue.begin(), ready_queue.end(), byBurstPointer);
+
+        if (!ready_queue.empty()) {
+            Process* current = ready_queue.front();
+            if (!current->started) {
+                current->start_time = time;
+                current->started = true;
+            }
+
+            while (current->out.size() < current->arrival) {
+                current->out += " ";
+            }
+            while (current->out.size() < time) {
+                current->out += "_";
+            }
+
+            // Execute one unit of burst time
+            current->out += "#";
+            current->burst--;
+            time++;
+            if (current->burst == 0) {
+                current->end_time = time;
+                total_wait_time += (current->end_time - current->arrival - (current->end_time - current->start_time));
+                total_response_time += (current->start_time - current->arrival);
+                completed++;
+                ready_queue.erase(ready_queue.begin());
+                if (time <= 10) thr++;
+            }
+        } else {
+            for (size_t i = 0; i < processes.size(); ++i) {
+                processes[i].out += " ";
+            }
+            time++;
+        }
+    }
+    for (size_t i = 0; i < processes.size(); ++i) {
+        cout << processes[i].name << processes[i].out << endl;
+    }
+
+    cout << "Average wait time: " << total_wait_time / processes.size() << endl;
+    cout << "Average response time: " << total_response_time / processes.size() << endl;
+    cout << "Throughput over 10 cycles: " << thr << endl;
 }
-//     int time = 0;
-//     int completed = 0;
-//     int n = processes.size();
 
-
-
-//     std::cout << "\nSJF with Preemption Schedule:\n";
-    
-//     while (completed < n) {
-//         // Find the process with the shortest remaining time that has arrived
-//         int minIndex = -1;
-//         for (int i = 0; i < n; ++i) {
-//             if (processes[i].arrival <= time && processes[i].remaining > 0) {
-//                 if (minIndex == -1 || processes[i].remaining < processes[minIndex].remaining) {
-//                     minIndex = i;
-//                 }
-//             }
-//         }
-
-//         if (minIndex != -1) {
-//             // Run the chosen process for 1 time unit
-//             processes[minIndex].timeline += "#";
-//             processes[minIndex].remaining--;
-            
-//             // Check if process is completed
-//             if (processes[minIndex].remaining == 0) {
-//                 completed++;
-//             }
-//         } else {
-//             // If no process is ready, advance time with idle
-//             for (auto& p : processes) {
-//                 if (p.arrival <= time && p.remaining > 0) p.timeline += "_";
-//             }
-//         }
-//         time++;
-//     }
-
-//     // Print the timeline for each process
-//     for (const auto& process : processes) {
-//         std::cout << process.name << " " << process.timeline << std::endl;
-//     }
-// }
-
-// void roundRobin(std::vector<Process> processes, int quantum) {
-//     int time = 0;
-//     int n = processes.size();
-//     std::queue<int> readyQueue;
-//     int completed = 0;
-
-//     // Sort processes by arrival time
-//     std::sort(processes.begin(), processes.end(), [](const Process& a, const Process& b) {
-//         return a.arrival < b.arrival;
-//     });
-
-//     std::cout << "\nRound Robin Schedule:\n";
-    
-//     int index = 0;
-//     while (completed < n) {
-//         // Add all processes that have arrived to the ready queue
-//         while (index < n && processes[index].arrival <= time) {
-//             readyQueue.push(index);
-//             index++;
-//         }
-
-//         if (!readyQueue.empty()) {
-//             int currIndex = readyQueue.front();
-//             readyQueue.pop();
-
-//             // Run process for one quantum
-//             processes[currIndex].timeline += "#";
-//             processes[currIndex].remaining--;
-//             time++;
-
-//             // Check if the process is completed
-//             if (processes[currIndex].remaining == 0) {
-//                 completed++;
-//             } else {
-//                 // If not completed, add it back to the queue if other processes are waiting
-//                 readyQueue.push(currIndex);
-//             }
-
-//             // Add "_" for waiting processes at each time step
-//             for (int i = 0; i < n; ++i) {
-//                 if (i != currIndex && processes[i].arrival <= time && processes[i].remaining > 0) {
-//                     processes[i].timeline += "_";
-//                 }
-//             }
-//         } else {
-//             // If no process is ready, increment time with idle
-//             for (auto& process : processes) {
-//                 if (process.arrival <= time && process.remaining > 0) process.timeline += "_";
-//             }
-//             time++;
-//         }
-//     }
-
-//     // Print the timeline for each process
-//     for (const auto& process : processes) {
-//         std::cout << process.name << " " << process.timeline << std::endl;
-//     }
-// }
 
 int main(){
     vector<Process> processes = readFile();
-    for(Process p: processes){
-        p.print();
-    }
+    cout << "Original processes:" << endl;
     fifo(processes);
-    // sjf(processes);
-    // roundRobin(processes, 1);
+    sjf(processes);
     return 0;
 }
