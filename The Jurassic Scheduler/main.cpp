@@ -14,27 +14,33 @@ public:
     int arrival;
     int start_time;       // For calculating response time
     int end_time;         // For calculating waiting time
-    bool started = false; // To check if process has started (for response time calculation)
+    int wait_time;
+    bool started;
     string out;
 
     Process(string n, int b, int a) {
         name = n;
         burst = b;
         arrival = a;
-    }
-    void print(){
-        cout << name << " " << burst << " " << arrival << " " << out << endl;
+        started = false;
     }
 };
 
-bool byBurstPointer(Process* a, Process* b) {
-    return a->burst < b->burst;
-}
-
+bool byBurstPointer(Process* a, Process* b) {return a->burst < b->burst;}
+bool byArrivalPointer(Process* a, Process* b) {return a->arrival < b->arrival;}
 bool byBurst (Process& a, Process& b) { return a.burst < b.burst; }
 bool byArrival (Process& a, Process& b) { return a.arrival < b.arrival; }
 
-
+void print(vector<Process> p, int awt, int art, int t){
+    for (size_t i = 0; i < p.size(); i++)
+    {
+         cout << p[i].name << "\t" << p[i].out << endl;
+    }
+    cout << "Average wait time: " << awt << endl;
+    cout << "Average response time: " << art << endl;
+    cout << "Throughput over 10 cycles: " << t << endl;
+    
+}
 // Static function to sort by arrival time
 
 vector<Process> readFile(){
@@ -63,56 +69,56 @@ vector<Process> readFile(){
 
 void fifo(vector<Process> p){
     int time = p[0].arrival;
-    double avgtime = 0;
-    double resptime = 0;
+    double avgwaitime = 0;
+    double avgresptime = 0;
     int thr = 0;
-    cout << "\nFIFO Schedule:\n" << "        0123456789\n";
+    cout << "\nFIFO Schedule:" << endl;
     for (size_t i = 0; i < p.size(); i++)
     {
-        if(time == 10){
-            thr = i;
-        }
-        cout << p[i].name;
-        avgtime += time;
         for (size_t j = 0; j < time; j++)
         {
             if(j>= p[i].arrival){
-                resptime++;
-                cout << "_";
+                p[i].wait_time++;
+                p[i].out.append("_");
             }
             else{
-                cout << " ";
+                p[i].out.append(" ");
             }
         }
+        p[i].start_time = time;
         while (p[i].burst>0)
         {
-            cout << "#";
+            p[i].out.append("#");
             p[i].burst--;
+            if(time == 10){
+                thr = i;
+            }
             time++;
         }
-        cout << endl;
     }
-    cout << "Average wait time: " << avgtime/p.size() << endl;
-    cout << "Average response time: " << resptime/p.size() << endl;
-    cout << "Throughput over 10 cycles: " << thr << endl;
+    for (size_t i = 0; i < p.size(); ++i) {
+        avgresptime += p[i].start_time;
+        avgwaitime += p[i].wait_time;
+    }
+    print(p, avgwaitime/p.size(), avgresptime/p.size(), thr);
+
 }
 
-void sjf(vector<Process> processes) {
+void sjf(vector<Process> p) {
     int time = 0;
-    double total_wait_time = 0, total_response_time = 0;
+    double avgwaitime = 0, avgresptime = 0;
     int completed = 0, thr = 0;
     vector<Process*> ready_queue;
 
-    cout << "\nSJF Schedule:\n        01234567890123456789\n";
+    cout << "\nSJF Schedule:\n";
 
-    sort(processes.begin(), processes.end(), byArrival);
+    sort(p.begin(), p.end(), byArrival);
 
-    while (completed < processes.size()) {
+    while (completed < p.size()) {
         // Add newly arrived processes to the ready queue
-        for (size_t i = 0; i < processes.size(); ++i) {
-            Process& process = processes[i];
-            if (process.arrival <= time && process.burst > 0 &&
-                find(ready_queue.begin(), ready_queue.end(), &process) == ready_queue.end()) {
+        for (size_t i = 0; i < p.size(); ++i) {
+            Process& process = p[i];
+            if (process.arrival <= time && process.burst > 0 && find(ready_queue.begin(), ready_queue.end(), &process) == ready_queue.end()) {
                 ready_queue.push_back(&process);
             }
         }
@@ -120,52 +126,122 @@ void sjf(vector<Process> processes) {
         sort(ready_queue.begin(), ready_queue.end(), byBurstPointer);
 
         if (!ready_queue.empty()) {
-            Process* current = ready_queue.front();
-            if (!current->started) {
-                current->start_time = time;
-                current->started = true;
+            Process* first = ready_queue.front();
+            if (!first->started) {
+                first->start_time = time;
+                first->started = true;
             }
 
-            while (current->out.size() < current->arrival) {
-                current->out += " ";
+            while (first->out.size() < first->arrival) {
+                first->out += " ";
             }
-            while (current->out.size() < time) {
-                current->out += "_";
+            while (first->out.size() < time) {
+                first->out += "_";
             }
 
             // Execute one unit of burst time
-            current->out += "#";
-            current->burst--;
+            first->out += "#";
+            first->burst--;
             time++;
-            if (current->burst == 0) {
-                current->end_time = time;
-                total_wait_time += (current->end_time - current->arrival - (current->end_time - current->start_time));
-                total_response_time += (current->start_time - current->arrival);
+            if (first->burst == 0) {
+                first->end_time = time;
+                avgwaitime += (first->end_time - first->arrival - (first->end_time - first->start_time));
+                avgresptime += (first->start_time - first->arrival);
                 completed++;
                 ready_queue.erase(ready_queue.begin());
                 if (time <= 10) thr++;
             }
         } else {
-            for (size_t i = 0; i < processes.size(); ++i) {
-                processes[i].out += " ";
+            for (size_t i = 0; i < p.size(); ++i) {
+                p[i].out += " ";
             }
             time++;
         }
     }
-    for (size_t i = 0; i < processes.size(); ++i) {
-        cout << processes[i].name << processes[i].out << endl;
+    print(p, avgwaitime/p.size(), avgresptime/p.size(), thr);
+}
+
+void round_robin(vector<Process> p, int quantum = 1) {
+    int time = 0;
+    double avgwaitime = 0, avgresptime = 0;
+    int completed = 0, thr = 0;
+    queue<Process*> ready_queue;
+
+    cout << "\nRound Robin Schedule:\n";
+
+    vector<Process*> sorted_processes;
+    for (size_t i = 0; i < p.size(); ++i) {
+        sorted_processes.push_back(&p[i]);
+    }
+    sort(sorted_processes.begin(), sorted_processes.end(), byArrivalPointer);
+
+    int next_process_index = 0;
+    int n = sorted_processes.size();
+
+    while (completed < n) {
+        while (next_process_index < n && sorted_processes[next_process_index]->arrival <= time) {
+            ready_queue.push(sorted_processes[next_process_index]);
+            next_process_index++;
+        }
+
+        if (!ready_queue.empty()) {
+            Process* first = ready_queue.front();
+            ready_queue.pop();
+
+            if (!first->started) {
+                first->start_time = time;
+                first->started = true;
+            }
+
+            while (first->out.length() < (size_t)first->arrival) {
+                first->out += " ";
+            }
+            while (first->out.length() < (size_t)time) {
+                first->out += "_";
+            }
+
+            int time_slice = min(quantum, first->burst);
+            for (int i = 0; i < time_slice; ++i) {
+                first->out += "#";
+            }
+            time += time_slice;
+            first->burst -= time_slice;
+
+            while (next_process_index < n && sorted_processes[next_process_index]->arrival <= time) {
+                ready_queue.push(sorted_processes[next_process_index]);
+                next_process_index++;
+            }
+
+            if (first->burst == 0) {
+                first->end_time = time;
+                int turnaround_time = first->end_time - first->arrival;
+                int wait_time = turnaround_time - (first->burst + time_slice);
+                avgwaitime += wait_time;
+                avgresptime += (first->start_time - first->arrival);
+                completed++;
+                if (time <= 10) thr++;
+            } else {
+                ready_queue.push(first);
+            }
+        } else {
+            time++;
+        }
     }
 
-    cout << "Average wait time: " << total_wait_time / processes.size() << endl;
-    cout << "Average response time: " << total_response_time / processes.size() << endl;
-    cout << "Throughput over 10 cycles: " << thr << endl;
+    for (size_t i = 0; i < p.size(); ++i) {
+        while (p[i].out.length() < (size_t)time) {
+            p[i].out += " ";
+        }
+    }
+    print(p, avgwaitime/p.size(), avgresptime/p.size(), thr);
+
 }
 
 
 int main(){
     vector<Process> processes = readFile();
-    cout << "Original processes:" << endl;
     fifo(processes);
     sjf(processes);
+    round_robin(processes);
     return 0;
 }
