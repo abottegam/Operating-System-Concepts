@@ -30,7 +30,7 @@ bool byArrivalPointer(Process* a, Process* b) {return a->arrival < b->arrival;}
 bool byBurst (Process& a, Process& b) { return a.burst < b.burst; }
 bool byArrival (Process& a, Process& b) { return a.arrival < b.arrival; }
 
-void print(vector<Process> p, int awt, int art, int t){
+void print(vector<Process> p, double awt, double art, int t){
     for (size_t i = 0; i < p.size(); i++)
     {
          cout << p[i].name << "\t" << p[i].out << endl;
