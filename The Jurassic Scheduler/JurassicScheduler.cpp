@@ -14,7 +14,6 @@ public:
     int arrival;
     int start_time;       // For calculating response time
     int end_time;         // For calculating waiting time
-    int wait_time;
     bool started;
     string out;
 
@@ -78,7 +77,6 @@ void fifo(vector<Process> p){
         for (size_t j = 0; j < time; j++)
         {
             if(j>= p[i].arrival){
-                p[i].wait_time++;
                 p[i].out.append("_");
             }
             else{
@@ -98,7 +96,7 @@ void fifo(vector<Process> p){
     }
     for (size_t i = 0; i < p.size(); ++i) {
         avgresptime += p[i].start_time;
-        avgwaitime += p[i].wait_time;
+        avgwaitime += p[i].start_time-p[i].arrival;
     }
     print(p, avgwaitime/p.size(), avgresptime/p.size(), thr);
 
