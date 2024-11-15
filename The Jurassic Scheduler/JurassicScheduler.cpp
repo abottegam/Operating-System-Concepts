@@ -12,7 +12,7 @@ public:
     string name;
     int burst;
     int arrival;
-    int start_time;       // For calculating response time
+    int start_time;
     int wait_time;
     bool started;
     string out;
@@ -40,7 +40,6 @@ void print(vector<Process> p, double awt, double art, int t){
     cout << "Throughput over 10 cycles: " << t << endl;
     
 }
-// Static function to sort by arrival time
 
 vector<Process> readFile(){
     ifstream input("processes.txt");
@@ -114,7 +113,6 @@ void sjf(vector<Process> p) {
     sort(p.begin(), p.end(), byArrival);
 
     while (completed < p.size()) {
-        // Add newly arrived processes to the ready queue
         for (size_t i = 0; i < p.size(); ++i) {
             Process& process = p[i];
             if (process.arrival <= time && process.burst > 0 && find(ready_queue.begin(), ready_queue.end(), &process) == ready_queue.end()) {
@@ -139,7 +137,6 @@ void sjf(vector<Process> p) {
                 first->out += "_";
             }
 
-            // Execute one unit of burst time
             first->out += "#";
             first->burst--;
             time++;
