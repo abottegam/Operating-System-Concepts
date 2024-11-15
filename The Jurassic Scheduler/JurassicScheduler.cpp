@@ -13,7 +13,7 @@ public:
     int burst;
     int arrival;
     int start_time;       // For calculating response time
-    int end_time;         // For calculating waiting time
+    int wait_time;
     bool started;
     string out;
 
@@ -77,6 +77,7 @@ void fifo(vector<Process> p){
         for (size_t j = 0; j < time; j++)
         {
             if(j>= p[i].arrival){
+                p[i].wait_time++;
                 p[i].out.append("_");
             }
             else{
@@ -95,8 +96,8 @@ void fifo(vector<Process> p){
         }
     }
     for (size_t i = 0; i < p.size(); ++i) {
-        avgresptime += p[i].start_time;
-        avgwaitime += p[i].start_time-p[i].arrival;
+        avgresptime += p[i].start_time-p[i].arrival;
+        avgwaitime += p[i].wait_time;
     }
     print(p, avgwaitime/p.size(), avgresptime/p.size(), thr);
 
@@ -134,6 +135,7 @@ void sjf(vector<Process> p) {
                 first->out += " ";
             }
             while (first->out.size() < time) {
+                first->wait_time++;
                 first->out += "_";
             }
 
@@ -142,8 +144,7 @@ void sjf(vector<Process> p) {
             first->burst--;
             time++;
             if (first->burst == 0) {
-                first->end_time = time;
-                avgwaitime += (first->end_time - first->arrival - (first->end_time - first->start_time));
+                avgwaitime += first->wait_time;
                 avgresptime += (first->start_time - first->arrival);
                 completed++;
                 ready_queue.erase(ready_queue.begin());
@@ -195,15 +196,13 @@ void round_robin(vector<Process> p, int quantum = 1) {
                 first->out += " ";
             }
             while (first->out.length() < (size_t)time) {
+                first->wait_time++;
                 first->out += "_";
             }
 
-            int time_slice = min(quantum, first->burst);
-            for (int i = 0; i < time_slice; ++i) {
-                first->out += "#";
-            }
-            time += time_slice;
-            first->burst -= time_slice;
+            first->out += "#";
+            time++;
+            first->burst--;
 
             while (next_process_index < n && sorted_processes[next_process_index]->arrival <= time) {
                 ready_queue.push(sorted_processes[next_process_index]);
@@ -211,10 +210,7 @@ void round_robin(vector<Process> p, int quantum = 1) {
             }
 
             if (first->burst == 0) {
-                first->end_time = time;
-                int turnaround_time = first->end_time - first->arrival;
-                int wait_time = turnaround_time - (first->burst + time_slice);
-                avgwaitime += wait_time;
+                avgwaitime += first->wait_time;
                 avgresptime += (first->start_time - first->arrival);
                 completed++;
                 if (time <= 10) thr++;
